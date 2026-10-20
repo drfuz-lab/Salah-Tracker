@@ -535,6 +535,29 @@
     color: var(--text-dim);
   }
 
+  .made-up-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .made-up-input {
+    width: 44px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 5px 6px;
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+  .made-up-input::-webkit-outer-spin-button,
+  .made-up-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .made-up-input:focus { outline: none; border-color: var(--gold); }
+
   .btn-made-up {
     background: none;
     border: 1px solid var(--border);
@@ -542,7 +565,7 @@
     color: var(--text-dim);
     font-family: 'DM Sans', sans-serif;
     font-size: 12px;
-    padding: 6px 10px;
+    padding: 5px 8px;
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
@@ -659,6 +682,7 @@
   .asr-col { background: rgba(196,137,107,0.2); color: var(--asr); border-color: rgba(196,137,107,0.3); }
   .maghrib-col { background: rgba(155,107,196,0.2); color: var(--maghrib); border-color: rgba(155,107,196,0.3); }
   .isha-col { background: rgba(74,127,168,0.2); color: var(--isha); border-color: rgba(74,127,168,0.3); }
+  .witr-col { background: rgba(80,160,120,0.2); color: #3d9970; border-color: rgba(80,160,120,0.3); }
 
   .fajr-dot { background: var(--fajr); }
   .dhuhr-dot { background: var(--dhuhr); }
@@ -1202,6 +1226,7 @@
             <option value="Asr">Asr</option>
             <option value="Maghrib">Maghrib</option>
             <option value="Isha">Isha</option>
+            <option value="Witr">Witr</option>
           </select>
         </div>
         <div>
@@ -1427,7 +1452,7 @@
 
 <script>
 const PRAYERS = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
-const PRAYER_COLORS = { Fajr:'fajr', Dhuhr:'dhuhr', Asr:'asr', Maghrib:'maghrib', Isha:'isha' };
+const PRAYER_COLORS = { Fajr:'fajr', Dhuhr:'dhuhr', Asr:'asr', Maghrib:'maghrib', Isha:'isha', Witr:'witr' };
 const PRAYER_TIMES = { Fajr:'', Dhuhr:'', Asr:'', Maghrib:'', Isha:'' };
 
 // ---- DEEN CENTRAL MOSQUE TIMES ----
@@ -2076,12 +2101,25 @@ function addQadha() {
 }
 
 function madeUpOne(id) {
+  madeUpN(id, 1);
+}
+
+function madeUpN(id, n) {
   const item = qadhaList.find(q => q.id === id);
   if (!item) return;
-  item.madeUp = Math.min(item.madeUp + 1, item.total);
+  const num = parseInt(n) || 1;
+  if (num < 1) return;
+  item.madeUp = Math.min(item.madeUp + num, item.total);
   if (item.madeUp >= item.total) item.completed = true;
   save();
   renderQadha();
+  showToast(`Logged ${num} × ${item.prayer} made up`);
+}
+
+function logMadeUp(id) {
+  const inputEl = document.getElementById('madeup-' + id);
+  const n = parseInt(inputEl ? inputEl.value : 1) || 1;
+  madeUpN(id, n);
 }
 
 function deleteQadha(id) {
@@ -2133,7 +2171,11 @@ function renderQadha() {
         <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
         <div class="progress-text">${pct}% done</div>
       </div>
-      ${!item.completed ? `<button class="btn-made-up" onclick="madeUpOne(${item.id})">+1 made up</button>` : '<span style="font-size:12px;color:var(--green)">✓ Complete</span>'}
+      ${!item.completed ? `
+        <div class="made-up-wrap">
+          <input type="number" id="madeup-${item.id}" class="made-up-input" value="1" min="1" max="${item.total - item.madeUp}" title="How many did you make up?">
+          <button class="btn-made-up" onclick="logMadeUp(${item.id})">✓ Log</button>
+        </div>` : '<span style="font-size:12px;color:var(--green)">✓ Complete</span>'}
       <button class="btn-delete" onclick="deleteQadha(${item.id})">×</button>
     `;
     list.appendChild(el);
