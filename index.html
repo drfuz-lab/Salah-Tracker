@@ -1462,34 +1462,58 @@ function parseMosqueHTML(html) {
   const rows = doc.querySelectorAll('table tr, .timetable-row, .prayer-row, tr');
   const result = {};
 
-  // Fallback: try to extract from text using regex for date + 6 time pairs
-  const text = doc.body ? doc.body.innerText || doc.body.textContent : html;
+  // Month name → number map
+  const MON = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+
+  // Helper: parse "1st October 2026", "01/10/2026", "2026-10-01" → "YYYY-MM-DD"
+  function parseDate(t) {
+    t = t.trim();
+    // YYYY-MM-DD
+    let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return t;
+    // DD/MM/YYYY or D/M/YYYY
+    m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    // "1st October 2026" or "1 October 2026"
+    m = t.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})$/i);
+    if (m) {
+      const mo = MON[m[2].toLowerCase()];
+      if (mo) return `${m[3]}-${String(mo).padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    }
+    return null;
+  }
 
   // Try structured table first
   rows.forEach(row => {
     const cells = row.querySelectorAll('td, th');
-    if (cells.length < 10) return;
-    // Try to find a date cell
+    if (cells.length < 4) return;
+    // Try to find a date cell in first 3 columns
     let dateStr = null;
-    for (let i = 0; i < 3; i++) {
-      const t = cells[i].textContent.trim();
-      // Match DD/MM/YYYY or YYYY-MM-DD or just day number
-      const m = t.match(/(\d{4})-(\d{2})-(\d{2})/);
-      if (m) { dateStr = t.slice(0,10); break; }
+    for (let i = 0; i < Math.min(3, cells.length); i++) {
+      const d = parseDate(cells[i].textContent);
+      if (d) { dateStr = d; break; }
     }
     if (!dateStr) return;
-    const times = [];
+    // Collect all time values (e.g. "5:55 am", "6:15 am") — skip Sunrise (3rd time per prayer group)
+    // Deen Central columns: Date | Day | Fajr-Begins | Fajr-Jamaat | Sunrise | Dhuhr-Begins | Dhuhr-Jamaat | Asr-Begins | Asr-Jamaat | Maghrib-Begins | Maghrib-Jamaat | Isha-Begins | Isha-Jamaat
+    const allTimes = [];
     for (let i = 0; i < cells.length; i++) {
       const t = cells[i].textContent.trim();
-      if (/^\d{1,2}:\d{2}\s*(am|pm)/i.test(t)) times.push(t);
+      if (/^\d{1,2}:\d{2}\s*(am|pm)/i.test(t)) allTimes.push(t);
     }
-    if (times.length >= 10) {
+    // With Sunrise included: [Fajr-start, Fajr-jamaat, Sunrise, Dhuhr-start, Dhuhr-jamaat, Asr-start, Asr-jamaat, Maghrib-start, Maghrib-jamaat, Isha-start, Isha-jamaat]
+    // That's 11 values; without Sunrise (old format): 10 values
+    if (allTimes.length >= 10) {
+      const hasSunrise = allTimes.length >= 11;
+      const t = hasSunrise
+        ? [allTimes[0], allTimes[1], allTimes[3], allTimes[4], allTimes[5], allTimes[6], allTimes[7], allTimes[8], allTimes[9], allTimes[10]]
+        : allTimes;
       result[dateStr] = {
-        Fajr:    { start: times[0], jamaat: times[1] },
-        Dhuhr:   { start: times[3], jamaat: times[4] },
-        Asr:     { start: times[5], jamaat: times[6] },
-        Maghrib: { start: times[7], jamaat: times[8] },
-        Isha:    { start: times[9], jamaat: times[10] || times[9] },
+        Fajr:    { start: t[0], jamaat: t[1] },
+        Dhuhr:   { start: t[2], jamaat: t[3] },
+        Asr:     { start: t[4], jamaat: t[5] },
+        Maghrib: { start: t[6], jamaat: t[7] },
+        Isha:    { start: t[8], jamaat: t[9] || t[8] },
       };
     }
   });
@@ -1499,8 +1523,8 @@ function parseMosqueHTML(html) {
 
 async function fetchMosqueMonth(year, month) {
   const key = `${year}-${String(month).padStart(2,'0')}`;
-  // Check if we already have this month cached
-  const cached = Object.keys(mosqueTimes).filter(d => d.startsWith(key));
+  // Check if we already have this month cached with actual time data
+  const cached = Object.keys(mosqueTimes).filter(d => d.startsWith(key) && mosqueTimes[d]?.Fajr?.start);
   if (cached.length > 20) return; // already have it
 
   setBannerStatus('Fetching Deen Central times…');
@@ -2482,7 +2506,7 @@ function renderYearView() {
   const LABELS  = ['F','Z','A','M','E','W'];
   const MONTH_NAMES = ['January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
-  const allData = JSON.parse(localStorage.getItem('salah_' + currentUser) || '{}');
+  const allData = data;
   const todayIso = new Date().toISOString().split('T')[0];
   const year = new Date().getFullYear();
 
@@ -2594,7 +2618,7 @@ function signOut() {
   document.getElementById('auth-btn').textContent = 'Sign In';
 }
 
-function bootApp() {
+async function bootApp() {
   document.getElementById('auth-gate').style.display = 'none';
   document.getElementById('main-app').style.display = '';
   document.getElementById('q-date').value = todayUK();
@@ -2602,6 +2626,10 @@ function bootApp() {
   renderQadha();
   loadSettings();
   checkMonthlyEmail();
+  // Pull cloud data then refresh UI
+  await pullFromCloud();
+  renderDaily();
+  renderQadha();
 }
 
 // Async boot: restore session first, then show app or auth gate
