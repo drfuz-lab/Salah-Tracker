@@ -2604,11 +2604,15 @@ function bootApp() {
   checkMonthlyEmail();
 }
 
-if (currentUser) {
-  bootApp();
-} else {
-  document.getElementById('auth-gate').style.display = '';
-}
+// Async boot: restore session first, then show app or auth gate
+(async () => {
+  const ok = await restoreSession();
+  if (ok && currentUser) {
+    bootApp();
+  } else {
+    document.getElementById('auth-gate').style.display = '';
+  }
+})();
 
 // ===================== SETTINGS =====================
 let appSettings = JSON.parse(localStorage.getItem('salah_settings') || '{}');
