@@ -132,6 +132,18 @@
     border: 1px solid var(--border);
   }
 
+  .tab.tab-signout {
+    flex: 0 0 auto;
+    padding: 10px 8px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    font-size: 15px;
+  }
+  .tab.tab-signout:hover {
+    color: #c97828;
+    opacity: 1;
+  }
+
   /* Section headers */
   .section-label {
     font-size: 11px;
@@ -637,6 +649,171 @@
     text-transform: uppercase;
     letter-spacing: 0.07em;
   }
+
+  /* Qadha redesign */
+  .qadha-headline {
+    text-align: center;
+    padding: 24px 16px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .qh-total {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 72px;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .qh-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+  .qh-progress-wrap {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .qh-progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .qh-progress-pct {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+  .qh-stats-row {
+    display: flex;
+    gap: 10px;
+  }
+  .qh-stat {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .qh-stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .qh-stat-lbl {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .qr-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .qr-row:last-child { border-bottom: none; }
+  .qr-tag {
+    width: 70px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 6px;
+    text-align: center;
+  }
+  .qr-numbers {
+    flex: 1;
+    min-width: 0;
+  }
+  .qr-owed {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1;
+  }
+  .qr-owed span { font-size: 12px; color: var(--text-dim); margin-left: 4px; }
+  .qr-mini-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .qr-mini-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+  }
+  .qr-btns {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .qr-inp {
+    width: 52px;
+    text-align: center;
+    padding: 6px 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .qr-log-btn {
+    padding: 6px 10px;
+    background: var(--gold-soft);
+    border: 1px solid rgba(201,168,76,0.4);
+    border-radius: 6px;
+    color: var(--gold);
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .qr-log-btn:hover { background: rgba(201,168,76,0.2); }
+  .yv-qd-count {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .yv-cell { position: relative; }
+  #yv-back-top {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 100;
+  }
+  #yv-back-top:hover { opacity: 0.85; }
 
   /* Stats tab */
   .week-grid {
@@ -1221,6 +1398,7 @@
     <button class="tab" onclick="switchTab('stats')">Overview</button>
     <button class="tab" onclick="switchTab('year')">Year</button>
     <button class="tab" onclick="switchTab('settings')">⚙</button>
+    <button class="tab tab-signout" onclick="signOut()" title="Sign out">⏻</button>
   </div>
 
   <!-- DAILY PANEL -->
@@ -1260,42 +1438,9 @@
 
   <!-- QADHA PANEL -->
   <div id="panel-qadha" class="panel">
-    <div class="qadha-add">
-      <h3>Log missed prayers</h3>
-      <div class="form-row">
-        <div>
-          <label>Prayer</label>
-          <select id="q-prayer">
-            <option value="Fajr">Fajr</option>
-            <option value="Dhuhr">Dhuhr</option>
-            <option value="Asr">Asr</option>
-            <option value="Maghrib">Maghrib</option>
-            <option value="Isha">Isha</option>
-            <option value="Witr">Witr</option>
-          </select>
-        </div>
-        <div>
-          <label>Count missed</label>
-          <input type="number" id="q-count" min="1" max="9999" value="1" placeholder="e.g. 30">
-        </div>
-      </div>
-      <div class="form-row">
-        <div>
-          <label>Period / note (optional)</label>
-          <input type="text" id="q-note" placeholder="e.g. Ramadan 2022, university years…">
-        </div>
-        <div>
-          <label>Date logged</label>
-          <div class="date-input-wrap"><input type="text" id="q-date" placeholder="dd/mm/yyyy" maxlength="10" oninput="onDateTyped(this)" onblur="onDateBlur(this)" autocomplete="off"><button type="button" class="cal-icon-btn" onclick="openPicker('q-date')">&#128197;</button></div>
-        </div>
-      </div>
-      <button class="btn-add" onclick="addQadha()">+ Add to Qadha List</button>
-    </div>
-
-    <div id="qadha-banner" class="qadha-banner"></div>
-
-    <div class="section-label">Outstanding qadha</div>
-    <div class="qadha-list" id="qadha-list"></div>
+    <div class="qadha-headline" id="qadha-headline"><!-- filled by renderQadha() --></div>
+    <div class="section-label" style="margin-bottom:12px">By prayer</div>
+    <div id="qadha-rows"></div>
   </div>
 
   <!-- CALCULATE PANEL -->
@@ -1472,6 +1617,28 @@
           <button class="currency-btn" id="cur-usd" onclick="setCurrency('USD')">$ USD</button>
         </div>
       </div>
+    </div>
+
+    <!-- Qadha Baseline -->
+    <div class="settings-section">
+      <div class="settings-section-title">Qadha Baseline (Historical Debt)</div>
+      <div class="settings-hint">Set once based on the years you missed prayers. The calculator will fill this in automatically, or you can enter it manually here.</div>
+      <div class="form-row" style="margin-top:14px">
+        <div>
+          <label>Years missed (approx.)</label>
+          <input type="number" id="set-baseline-years" min="0" max="100" placeholder="e.g. 20" oninput="calcBaselineFromYears()">
+        </div>
+        <div>
+          <label>Include Witr</label>
+          <div style="margin-top:8px">
+            <button class="witr-toggle" id="baseline-witr-toggle" onclick="toggleBaselineWitr()"><span class="witr-knob"></span></button>
+          </div>
+        </div>
+      </div>
+      <div class="section-label" style="margin-top:16px;margin-bottom:10px">Per-prayer baseline (editable)</div>
+      <div id="baseline-inputs"></div>
+      <button class="btn-add" style="margin-top:14px" onclick="saveBaselineSettings()">Save Baseline</button>
+      <div id="baseline-save-status" style="margin-top:8px;font-size:12px;color:var(--text-dim)"></div>
     </div>
 
     <!-- Email preview -->
@@ -1781,6 +1948,7 @@ loadMosqueTimes();
 let currentDateStr = todayStr();
 let data = JSON.parse(localStorage.getItem('salah_v2') || '{}');
 let qadhaList = JSON.parse(localStorage.getItem('qadha_v2') || '[]');
+let qadhaBaseline = JSON.parse(localStorage.getItem('qadha_baseline') || '{"Fajr":0,"Dhuhr":0,"Asr":0,"Maghrib":0,"Isha":0,"Witr":0}');
 
 function todayStr() {
   return new Date().toISOString().slice(0,10);
@@ -2129,104 +2297,119 @@ function changeDay(d) {
 }
 
 // QADHA
-function addQadha() {
-  const prayer = document.getElementById('q-prayer').value;
-  const count = parseInt(document.getElementById('q-count').value) || 1;
-  const note = document.getElementById('q-note').value.trim();
-  const date = parseUKDate(document.getElementById('q-date').value) || todayStr();
+// ---- QADHA HELPERS ----
+function saveBaseline() {
+  localStorage.setItem('qadha_baseline', JSON.stringify(qadhaBaseline));
+}
 
-  if (count < 1) { showToast('Enter a valid count'); return; }
+function getQadhaOwedByPrayer(prayer) {
+  const baseline = qadhaBaseline[prayer] || 0;
+  const autoMissed = qadhaList.filter(q => q.prayer === prayer && !q.fromBaseline).reduce((s,q) => s + q.total, 0);
+  const madeUp = qadhaList.filter(q => q.prayer === prayer).reduce((s,q) => s + q.madeUp, 0);
+  return Math.max(0, baseline + autoMissed - madeUp);
+}
 
-  qadhaList.push({
-    id: Date.now() + Math.random(),
-    prayer, total: count, madeUp: 0, note, date, completed: false
-  });
+function getQadhaMadeUpByPrayer(prayer) {
+  return qadhaList.filter(q => q.prayer === prayer).reduce((s,q) => s + q.madeUp, 0);
+}
+
+function getTotalQadhaOwed() {
+  const prayers6 = ['Fajr','Dhuhr','Asr','Maghrib','Isha','Witr'];
+  return prayers6.reduce((s,p) => s + getQadhaOwedByPrayer(p), 0);
+}
+
+function getTotalQadhaMadeUp() {
+  const prayers6 = ['Fajr','Dhuhr','Asr','Maghrib','Isha','Witr'];
+  return prayers6.reduce((s,p) => s + getQadhaMadeUpByPrayer(p), 0);
+}
+
+function logQadha(prayer) {
+  const inp = document.getElementById('qr-inp-' + prayer);
+  const n = parseInt(inp ? inp.value : 1) || 1;
+  if (n < 1) return;
+  let remaining = n;
+  // Fill against open auto-miss entries first
+  const entries = qadhaList.filter(q => q.prayer === prayer && !q.fromBaseline && q.madeUp < q.total);
+  for (const entry of entries) {
+    if (remaining <= 0) break;
+    const canMakeUp = entry.total - entry.madeUp;
+    const adding = Math.min(canMakeUp, remaining);
+    entry.madeUp += adding;
+    if (entry.madeUp >= entry.total) entry.completed = true;
+    remaining -= adding;
+  }
+  // Draw against baseline if still remaining
+  if (remaining > 0 && (qadhaBaseline[prayer] || 0) > 0) {
+    qadhaList.push({
+      id: Date.now() + Math.random(),
+      prayer, total: remaining, madeUp: remaining,
+      note: 'Made up (baseline)', date: todayStr(),
+      completed: true, fromBaseline: true
+    });
+    remaining = 0;
+  }
   save();
-  document.getElementById('q-count').value = 1;
-  document.getElementById('q-note').value = '';
   renderQadha();
-  showToast(`Added ${count} × ${prayer} to qadha`);
+  if (inp) inp.value = 1;
+  showToast('✓ Logged ' + n + ' × ' + prayer + ' made up');
 }
 
-function madeUpOne(id) {
-  madeUpN(id, 1);
-}
-
-function madeUpN(id, n) {
-  const item = qadhaList.find(q => q.id === id);
-  if (!item) return;
-  const num = parseInt(n) || 1;
-  if (num < 1) return;
-  item.madeUp = Math.min(item.madeUp + num, item.total);
-  if (item.madeUp >= item.total) item.completed = true;
-  save();
-  renderQadha();
-  showToast(`Logged ${num} × ${item.prayer} made up`);
-}
-
-function logMadeUp(id) {
-  const inputEl = document.getElementById('madeup-' + id);
-  const n = parseInt(inputEl ? inputEl.value : 1) || 1;
-  madeUpN(id, n);
-}
-
-function deleteQadha(id) {
-  qadhaList = qadhaList.filter(q => q.id !== id);
-  save();
-  renderQadha();
-}
+// Keep old addQadha for any lingering references (no-op now)
+function addQadha() {}
+function madeUpOne(id) {}
+function madeUpN(id, n) {}
+function logMadeUp(id) {}
+function deleteQadha(id) {}
 
 function renderQadha() {
-  // Set today's date default
-  if (!document.getElementById('q-date').value) {
-    document.getElementById('q-date').value = todayUK();
-  }
+  const prayers6 = ['Fajr','Dhuhr','Asr','Maghrib','Isha','Witr'];
+  const totalOwed = getTotalQadhaOwed();
+  const totalMadeUp = getTotalQadhaMadeUp();
+  const totalBaseline = Object.values(qadhaBaseline).reduce((a,b)=>a+b,0);
+  const totalAutoMissed = qadhaList.filter(q=>!q.fromBaseline).reduce((s,q)=>s+q.total,0);
+  const grandTotal = totalBaseline + totalAutoMissed;
+  const pct = grandTotal > 0 ? Math.min(100, Math.round((totalMadeUp / grandTotal) * 100)) : 0;
 
-  const list = document.getElementById('qadha-list');
-  const active = qadhaList.filter(q => !q.completed);
-  const done = qadhaList.filter(q => q.completed);
-  const total = qadhaList.reduce((s,q)=>s+q.total,0);
-  const totalMadeUp = qadhaList.reduce((s,q)=>s+q.madeUp,0);
-  const remaining = total - totalMadeUp;
-
-  // Banner
-  const banner = document.getElementById('qadha-banner');
-  banner.innerHTML = `
-    <div class="banner-stat"><div class="bn">${remaining}</div><div class="bl">Remaining</div></div>
-    <div class="banner-stat"><div class="bn">${totalMadeUp}</div><div class="bl">Made up</div></div>
-    <div class="banner-stat"><div class="bn">${total}</div><div class="bl">Total logged</div></div>
-  `;
-
-  list.innerHTML = '';
-
-  if (active.length === 0 && done.length === 0) {
-    list.innerHTML = '<div class="empty">No qadha prayers logged yet</div>';
-    return;
-  }
-
-  [...active, ...done].forEach(item => {
-    const col = PRAYER_COLORS[item.prayer];
-    const pct = item.total > 0 ? Math.round((item.madeUp/item.total)*100) : 0;
-    const el = document.createElement('div');
-    el.className = 'qadha-item' + (item.completed ? ' completed' : '');
-    el.innerHTML = `
-      <div class="prayer-tag qadha-prayer-tag ${col}-col">${item.prayer}</div>
-      <div class="qadha-info">
-        <div class="qadha-count">${item.madeUp} / ${item.total}</div>
-        <div class="qadha-meta">${item.note || formatDateShort(item.date)}</div>
+  // Headline
+  const headline = document.getElementById('qadha-headline');
+  if (headline) {
+    headline.innerHTML = `
+      <div class="qh-total">${totalOwed.toLocaleString()}</div>
+      <div class="qh-label">Prayers Remaining</div>
+      <div class="qh-progress-wrap"><div class="qh-progress-fill" style="width:${pct}%"></div></div>
+      <div class="qh-progress-pct">${pct}% cleared</div>
+      <div class="qh-stats-row">
+        <div class="qh-stat"><div class="qh-stat-num">${grandTotal.toLocaleString()}</div><div class="qh-stat-lbl">Total owed</div></div>
+        <div class="qh-stat"><div class="qh-stat-num">${totalMadeUp.toLocaleString()}</div><div class="qh-stat-lbl">Made up</div></div>
+        <div class="qh-stat"><div class="qh-stat-num">${totalOwed.toLocaleString()}</div><div class="qh-stat-lbl">Remaining</div></div>
       </div>
-      <div class="qadha-progress">
-        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-        <div class="progress-text">${pct}% done</div>
-      </div>
-      ${!item.completed ? `
-        <div class="made-up-wrap">
-          <input type="number" id="madeup-${item.id}" class="made-up-input" value="1" min="1" max="${item.total - item.madeUp}" title="How many did you make up?">
-          <button class="btn-made-up" onclick="logMadeUp(${item.id})">✓ Log</button>
-        </div>` : '<span style="font-size:12px;color:var(--green)">✓ Complete</span>'}
-      <button class="btn-delete" onclick="deleteQadha(${item.id})">×</button>
     `;
-    list.appendChild(el);
+  }
+
+  // Per-prayer rows
+  const rowsEl = document.getElementById('qadha-rows');
+  if (!rowsEl) return;
+  rowsEl.innerHTML = '';
+  prayers6.forEach(prayer => {
+    const col = PRAYER_COLORS[prayer];
+    const owed = getQadhaOwedByPrayer(prayer);
+    const madeUp = getQadhaMadeUpByPrayer(prayer);
+    const pOwned = (qadhaBaseline[prayer]||0) + qadhaList.filter(q=>q.prayer===prayer&&!q.fromBaseline).reduce((s,q)=>s+q.total,0);
+    const pPct = pOwned > 0 ? Math.min(100, Math.round((madeUp/pOwned)*100)) : 0;
+    const row = document.createElement('div');
+    row.className = 'qr-row';
+    row.innerHTML = `
+      <div class="prayer-tag qr-tag ${col}-col">${prayer}</div>
+      <div class="qr-numbers">
+        <div class="qr-owed">${owed.toLocaleString()}<span>remaining</span></div>
+        <div class="qr-mini-bar"><div class="qr-mini-fill" style="width:${pPct}%"></div></div>
+      </div>
+      <div class="qr-btns">
+        <input type="number" id="qr-inp-${prayer}" class="qr-inp" value="1" min="1" max="9999">
+        <button class="qr-log-btn" onclick="logQadha('${prayer}')">✓ Log</button>
+      </div>
+    `;
+    rowsEl.appendChild(row);
   });
 }
 
@@ -2463,25 +2646,16 @@ function calcUpdate() {
 
 function sendToQadha() {
   if (!window._calcResults) return;
-  const { checkedPrayers, calcResults, fromVal, toVal } = window._calcResults;
-  const periodNote = formatDateShort(fromVal) + ' – ' + formatDateShort(toVal);
+  const { checkedPrayers, calcResults } = window._calcResults;
   let added = 0;
   checkedPrayers.forEach(p => {
     const count = calcResults[p].count;
     if (count <= 0) return;
-    qadhaList.push({
-      id: Date.now() + Math.random(),
-      prayer: p,
-      total: count,
-      madeUp: 0,
-      note: 'Calculated: ' + periodNote,
-      date: todayStr(),
-      completed: false
-    });
+    qadhaBaseline[p] = (qadhaBaseline[p] || 0) + count;
     added++;
   });
-  save();
-  showToast(`${added} prayer(s) added to Qadha list`);
+  saveBaseline();
+  showToast('Baseline updated — ' + added + ' prayer type(s) added');
   switchTab('qadha');
 }
 
@@ -2493,7 +2667,6 @@ function showToast(msg) {
 }
 
 // Init
-document.getElementById('q-date').value = todayUK();
 
 // ===================== SUPABASE AUTH + SYNC =====================
 const SUPA_URL = 'https://wwmgiptaejuqamchcipr.supabase.co';
@@ -2808,7 +2981,6 @@ function signOut() {
 async function bootApp() {
   document.getElementById('auth-gate').style.display = 'none';
   document.getElementById('main-app').style.display = '';
-  document.getElementById('q-date').value = todayUK();
   renderDaily();
   renderQadha();
   loadSettings();
@@ -2860,6 +3032,75 @@ function loadSettings() {
   document.getElementById('email-toggle').classList.toggle('on', emailOn);
   document.getElementById('email-config-block').style.display = emailOn ? '' : 'none';
   setCurrency(getS('currency','GBP'), false);
+  loadBaselineSettings();
+}
+
+// ---- BASELINE SETTINGS ----
+let baselineWitr = true;
+
+function loadBaselineSettings() {
+  const prayers6 = ['Fajr','Dhuhr','Asr','Maghrib','Isha','Witr'];
+  const container = document.getElementById('baseline-inputs');
+  if (!container) return;
+  // Render per-prayer inputs
+  container.innerHTML = '';
+  prayers6.forEach(p => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)';
+    row.innerHTML = `
+      <label style="font-size:13px;color:var(--text)">${p}</label>
+      <input type="number" id="bl-inp-${p}" value="${qadhaBaseline[p]||0}" min="0" style="width:100px;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;text-align:right">
+    `;
+    container.appendChild(row);
+  });
+  // Reflect witr toggle state
+  baselineWitr = (qadhaBaseline['Witr'] || 0) > 0 || baselineWitr;
+  const wt = document.getElementById('baseline-witr-toggle');
+  if (wt) wt.classList.toggle('on', baselineWitr);
+}
+
+function calcBaselineFromYears() {
+  const yrsEl = document.getElementById('set-baseline-years');
+  if (!yrsEl) return;
+  const years = parseFloat(yrsEl.value) || 0;
+  const daysPerYear = 365.25;
+  const days = Math.round(years * daysPerYear);
+  const prayers5 = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
+  prayers5.forEach(p => {
+    const el = document.getElementById('bl-inp-' + p);
+    if (el) el.value = days;
+  });
+  const witrEl = document.getElementById('bl-inp-Witr');
+  if (witrEl) witrEl.value = baselineWitr ? days : 0;
+}
+
+function toggleBaselineWitr() {
+  baselineWitr = !baselineWitr;
+  const btn = document.getElementById('baseline-witr-toggle');
+  if (btn) btn.classList.toggle('on', baselineWitr);
+  // Recalc if years entered
+  const yrsEl = document.getElementById('set-baseline-years');
+  if (yrsEl && yrsEl.value) calcBaselineFromYears();
+  else {
+    const witrEl = document.getElementById('bl-inp-Witr');
+    if (witrEl && !baselineWitr) witrEl.value = 0;
+  }
+}
+
+function saveBaselineSettings() {
+  const prayers6 = ['Fajr','Dhuhr','Asr','Maghrib','Isha','Witr'];
+  prayers6.forEach(p => {
+    const el = document.getElementById('bl-inp-' + p);
+    if (el) qadhaBaseline[p] = parseInt(el.value) || 0;
+  });
+  saveBaseline();
+  renderQadha();
+  const status = document.getElementById('baseline-save-status');
+  if (status) {
+    status.textContent = '✓ Baseline saved';
+    setTimeout(() => { status.textContent = ''; }, 2000);
+  }
+  showToast('Qadha baseline saved');
 }
 
 function toggleEmailNotif() {
