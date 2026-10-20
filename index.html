@@ -757,6 +757,12 @@
   .auth-error { background: var(--red-soft); border: 1px solid rgba(224,92,92,0.3); color: var(--red); font-size: 13px; padding: 10px 14px; border-radius: 7px; margin-top: 4px; }
   .auth-switch { margin-top: 18px; font-size: 13px; color: var(--text-dim); }
   .auth-switch button { background: none; border: none; color: var(--gold); cursor: pointer; font-family: "DM Sans", sans-serif; font-size: 13px; margin-left: 4px; text-decoration: underline; }
+  .btn-google { display: flex; align-items: center; justify-content: center; width: 100%; padding: 13px 20px; background: #fff; color: #3c4043; border: 1px solid #dadce0; border-radius: 8px; font-family: "DM Sans", sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: box-shadow 0.2s, background 0.2s; margin-top: 8px; }
+  .btn-google:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); background: #f8f9fa; }
+  .sync-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); padding: 4px 0; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .sync-dot.syncing { background: var(--gold); animation: pulse-gold 1s ease-in-out infinite; }
+  .sync-dot.error { background: var(--red); }
 
   /* ---- SETTINGS ---- */
   .settings-section {
@@ -1125,26 +1131,14 @@
   <div id="auth-gate" style="display:none">
     <div class="auth-card">
       <div class="auth-logo">☽</div>
-      <h2 class="auth-title">Welcome back</h2>
-      <p class="auth-sub" id="auth-mode-sub">Sign in to your Salah Tracker</p>
-      <div id="auth-name-row" style="display:none">
-        <label>Your name</label>
-        <input type="text" id="auth-name" placeholder="e.g. Abdullah">
-      </div>
-      <div>
-        <label>Email address</label>
-        <input type="email" id="auth-email" placeholder="you@example.com">
-      </div>
-      <div style="margin-top:10px">
-        <label>Password</label>
-        <input type="password" id="auth-password" placeholder="••••••••">
-      </div>
+      <h2 class="auth-title">Salah Tracker</h2>
+      <p class="auth-sub">Sign in to sync your prayer log across all devices</p>
       <div id="auth-error" class="auth-error" style="display:none"></div>
-      <button class="btn-add" style="margin-top:16px" onclick="authSubmit()" id="auth-btn">Sign In</button>
-      <div class="auth-switch">
-        <span id="auth-switch-text">Don't have an account?</span>
-        <button onclick="toggleAuthMode()" id="auth-switch-btn">Create one</button>
-      </div>
+      <button class="btn-google" onclick="signInWithGoogle()" id="auth-btn">
+        <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right:8px;flex-shrink:0"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+      <p style="margin-top:16px;font-size:11px;color:var(--text-dim);text-align:center">Your data is encrypted and synced securely via Supabase</p>
     </div>
   </div>
 
@@ -1917,10 +1911,14 @@ function renderDaily() {
     const col = PRAYER_COLORS[p];
     const row = document.createElement('div');
     row.className = 'prayer-row' + (status === 'prayed' ? ' prayed' : status === 'missed' ? ' missed' : '');
+    const mt = getTodayMosqueTimes(currentDateStr, p);
+    const timeHTML = mt
+      ? `<span class="time-start">${mt.start}</span><span class="time-jamaat">${mt.jamaat}</span>`
+      : `<span class="time-start" style="color:var(--text-dim);font-size:11px">—</span>`;
     row.innerHTML = `
       <div class="prayer-dot ${col}-dot"></div>
       <div class="prayer-name">${p}</div>
-      <div class="prayer-time">${PRAYER_TIMES[p]}</div>
+      <div class="prayer-time">${timeHTML}</div>
       <div class="prayer-actions">
         <button class="btn-prayer btn-prayed ${status==='prayed'?'active':''}" onclick="setPrayerStatus('${currentDateStr}','${p}','prayed')">✓ Prayed</button>
         <button class="btn-prayer btn-missed ${status==='missed'?'active':''}" onclick="setPrayerStatus('${currentDateStr}','${p}','missed')">✗ Missed</button>
@@ -2299,58 +2297,182 @@ function showToast(msg) {
 // Init
 document.getElementById('q-date').value = todayUK();
 
-// ===================== AUTH =====================
-let currentUser = JSON.parse(localStorage.getItem('salah_user') || 'null');
-// users store: { email -> { name, passwordHash } }
-function getUsers() { return JSON.parse(localStorage.getItem('salah_users') || '{}'); }
-function saveUsers(u) { localStorage.setItem('salah_users', JSON.stringify(u)); }
+// ===================== SUPABASE AUTH + SYNC =====================
+const SUPA_URL = 'https://wwmgiptaejuqamchcipr.supabase.co';
+const SUPA_KEY = 'sb_publishable_iWiddmKBGAO3tfJMpAyWKw_GXHuDvl9';
 
-function simpleHash(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; }
-  return h.toString(36);
-}
+let supaSession = null;
+let currentUser = null;
+let syncTimeout = null;
 
-let authMode = 'signin'; // or 'register'
-
-function toggleAuthMode() {
-  authMode = authMode === 'signin' ? 'register' : 'signin';
-  document.getElementById('auth-name-row').style.display = authMode === 'register' ? '' : 'none';
-  document.getElementById('auth-btn').textContent = authMode === 'register' ? 'Create account' : 'Sign In';
-  document.getElementById('auth-switch-text').textContent = authMode === 'register' ? 'Already have an account?' : "Don't have an account?";
-  document.getElementById('auth-switch-btn').textContent = authMode === 'register' ? 'Sign in' : 'Create one';
-  document.getElementById('auth-mode-sub').textContent = authMode === 'register' ? 'Create your account' : 'Sign in to your Salah Tracker';
-  document.getElementById('auth-error').style.display = 'none';
-}
-
-function authSubmit() {
-  const email = document.getElementById('auth-email').value.trim().toLowerCase();
-  const password = document.getElementById('auth-password').value;
-  const errEl = document.getElementById('auth-error');
-  errEl.style.display = 'none';
-
-  if (!email || !password) { errEl.textContent = 'Please enter email and password.'; errEl.style.display = ''; return; }
-
-  const users = getUsers();
-  const hash = simpleHash(password);
-
-  if (authMode === 'register') {
-    const name = document.getElementById('auth-name').value.trim();
-    if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = ''; return; }
-    if (users[email]) { errEl.textContent = 'An account with this email already exists.'; errEl.style.display = ''; return; }
-    users[email] = { name, passwordHash: hash };
-    saveUsers(users);
-    currentUser = { email, name };
-    localStorage.setItem('salah_user', JSON.stringify(currentUser));
-    bootApp();
-  } else {
-    if (!users[email] || users[email].passwordHash !== hash) {
-      errEl.textContent = 'Incorrect email or password.'; errEl.style.display = ''; return;
-    }
-    currentUser = { email, name: users[email].name };
-    localStorage.setItem('salah_user', JSON.stringify(currentUser));
-    bootApp();
+// --- Supabase REST helpers ---
+async function supaFetch(path, opts = {}) {
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Content-Type': 'application/json',
+    ...(supaSession?.access_token ? { 'Authorization': 'Bearer ' + supaSession.access_token } : {}),
+    ...opts.headers,
+  };
+  const res = await fetch(SUPA_URL + path, { ...opts, headers });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
   }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+// --- Google OAuth ---
+function signInWithGoogle() {
+  const redirectTo = encodeURIComponent(window.location.href.split('#')[0]);
+  window.location.href = `${SUPA_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+}
+
+async function signOut() {
+  try {
+    if (supaSession) {
+      await supaFetch('/auth/v1/logout', { method: 'POST' });
+    }
+  } catch(e) {}
+  supaSession = null;
+  currentUser = null;
+  try { localStorage.removeItem('salah_session'); } catch(e) {}
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('auth-gate').style.display = '';
+}
+
+// --- Session management ---
+async function restoreSession() {
+  // Check URL hash for tokens (OAuth callback)
+  const hash = window.location.hash;
+  if (hash && hash.includes('access_token')) {
+    const params = new URLSearchParams(hash.slice(1));
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    const expires_in = params.get('expires_in');
+    if (access_token) {
+      supaSession = { access_token, refresh_token, expires_at: Date.now() + parseInt(expires_in || 3600) * 1000 };
+      try { localStorage.setItem('salah_session', JSON.stringify(supaSession)); } catch(e) {}
+      // Clean URL
+      window.history.replaceState(null, '', window.location.pathname);
+      await loadUserFromSession();
+      return true;
+    }
+  }
+  // Try stored session
+  try {
+    const stored = localStorage.getItem('salah_session');
+    if (stored) {
+      supaSession = JSON.parse(stored);
+      // Refresh if expired or close to expiry
+      if (supaSession.expires_at && Date.now() > supaSession.expires_at - 60000) {
+        await refreshSession();
+      }
+      await loadUserFromSession();
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+async function refreshSession() {
+  if (!supaSession?.refresh_token) return;
+  try {
+    const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: supaSession.refresh_token }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      supaSession = { access_token: json.access_token, refresh_token: json.refresh_token, expires_at: Date.now() + json.expires_in * 1000 };
+      try { localStorage.setItem('salah_session', JSON.stringify(supaSession)); } catch(e) {}
+    }
+  } catch(e) {}
+}
+
+async function loadUserFromSession() {
+  try {
+    const user = await supaFetch('/auth/v1/user');
+    currentUser = { id: user.id, email: user.email, name: user.user_metadata?.full_name || user.email };
+  } catch(e) {
+    supaSession = null;
+    currentUser = null;
+  }
+}
+
+// --- Cloud sync ---
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const dot = el.querySelector('.sync-dot');
+  const txt = el.querySelector('.sync-text');
+  if (state === 'synced') { dot.className = 'sync-dot'; txt.textContent = 'Synced'; }
+  else if (state === 'syncing') { dot.className = 'sync-dot syncing'; txt.textContent = 'Syncing…'; }
+  else if (state === 'error') { dot.className = 'sync-dot error'; txt.textContent = 'Sync failed'; }
+  else if (state === 'offline') { dot.className = 'sync-dot error'; txt.textContent = 'Offline'; }
+}
+
+async function pushToCloud() {
+  if (!currentUser?.id) return;
+  setSyncStatus('syncing');
+  try {
+    const payload = {
+      user_id: currentUser.id,
+      prayer_data: JSON.stringify(data),
+      qadha_data: JSON.stringify(qadhaList),
+      updated_at: new Date().toISOString(),
+    };
+    await supaFetch('/rest/v1/salah_logs?on_conflict=user_id', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify(payload),
+    });
+    setSyncStatus('synced');
+  } catch(e) {
+    console.warn('Sync push failed:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function pullFromCloud() {
+  if (!currentUser?.id) return;
+  try {
+    const rows = await supaFetch(`/rest/v1/salah_logs?user_id=eq.${currentUser.id}&select=prayer_data,qadha_data`);
+    if (rows && rows.length > 0) {
+      const row = rows[0];
+      if (row.prayer_data) {
+        const cloud = JSON.parse(row.prayer_data);
+        // Merge: cloud wins for any date it has data; local wins for dates only local has
+        data = Object.assign({}, cloud, data);
+        // Actually prefer cloud as source of truth (it may have data from other devices)
+        data = Object.assign({}, data, cloud);
+        try { localStorage.setItem('salah_v2', JSON.stringify(data)); } catch(e) {}
+      }
+      if (row.qadha_data) {
+        const cloudQadha = JSON.parse(row.qadha_data);
+        // Merge by id — union, cloud wins on conflicts
+        const localMap = Object.fromEntries(qadhaList.map(q => [q.id, q]));
+        cloudQadha.forEach(q => { localMap[q.id] = q; });
+        qadhaList = Object.values(localMap);
+        try { localStorage.setItem('qadha_v2', JSON.stringify(qadhaList)); } catch(e) {}
+      }
+    }
+    setSyncStatus('synced');
+  } catch(e) {
+    console.warn('Sync pull failed:', e);
+    setSyncStatus('offline');
+  }
+}
+
+// Debounced save: write locally immediately, push to cloud after 2s idle
+const _origSave = save;
+function save() {
+  localStorage.setItem('salah_v2', JSON.stringify(data));
+  localStorage.setItem('qadha_v2', JSON.stringify(qadhaList));
+  // Debounce cloud push
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(pushToCloud, 2000);
 }
 
 // ---- YEAR VIEW ----
