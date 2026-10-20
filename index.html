@@ -232,7 +232,75 @@
     font-size: 12px;
     color: var(--text-dim);
     margin-right: 8px;
+    text-align: right;
+    line-height: 1.5;
   }
+
+  .prayer-time .time-start {
+    display: block;
+    font-size: 13px;
+    color: var(--text-mid);
+    font-weight: 400;
+  }
+
+  .prayer-time .time-jamaat {
+    display: block;
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 400;
+  }
+
+  .prayer-time .time-jamaat::before {
+    content: 'Jamāʿah ';
+    color: var(--text-dim);
+    font-size: 10px;
+  }
+
+  .mosque-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(201,168,76,0.07);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--text-mid);
+  }
+
+  .mosque-banner .mosque-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+    animation: pulse-gold 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .mosque-banner strong {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .mosque-banner .refresh-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+
+  .mosque-banner .refresh-btn:hover { color: var(--gold); }
 
   .prayer-actions {
     display: flex;
@@ -1103,6 +1171,12 @@
       <button onclick="changeDay(1)">&#8594;</button>
     </div>
 
+    <div class="mosque-banner" id="mosque-banner">
+      <div class="mosque-dot"></div>
+      <span class="mosque-status">Loading Deen Central times…</span>
+      <button class="refresh-btn" onclick="refreshMosqueTimes()" title="Refresh mosque times">↻</button>
+    </div>
+
     <div class="prayer-grid" id="prayer-grid"></div>
 
     <div class="day-summary">
@@ -1360,7 +1434,172 @@
 <script>
 const PRAYERS = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
 const PRAYER_COLORS = { Fajr:'fajr', Dhuhr:'dhuhr', Asr:'asr', Maghrib:'maghrib', Isha:'isha' };
-const PRAYER_TIMES = { Fajr:'~5:30', Dhuhr:'~1:00', Asr:'~4:15', Maghrib:'~7:45', Isha:'~9:30' };
+const PRAYER_TIMES = { Fajr:'', Dhuhr:'', Asr:'', Maghrib:'', Isha:'' };
+
+// ---- DEEN CENTRAL MOSQUE TIMES ----
+const MOSQUE_URL = 'https://deencentral.org/wp-admin/admin-ajax.php?action=get_monthly_timetable&month=';
+const MOSQUE_KEY = 'mosque_times_v1';
+let mosqueTimes = {}; // { 'YYYY-MM-DD': { Fajr:{start,jamaat}, Dhuhr:{start,jamaat}, ... } }
+
+// Map API field names → our prayer names
+const MOSQUE_MAP = {
+  Fajr:    { start: 'fajr_start',    jamaat: 'fajr_jamaat'    },
+  Dhuhr:   { start: 'dhuhr_start',   jamaat: 'dhuhr_jamaat'   },
+  Asr:     { start: 'asr_start',     jamaat: 'asr_jamaat'     },
+  Maghrib: { start: 'maghrib_start', jamaat: 'maghrib_jamaat' },
+  Isha:    { start: 'isha_start',    jamaat: 'isha_jamaat'    },
+};
+
+function loadMosqueTimes() {
+  try {
+    const raw = localStorage.getItem(MOSQUE_KEY);
+    if (raw) mosqueTimes = JSON.parse(raw);
+  } catch(e) { mosqueTimes = {}; }
+}
+
+function saveMosqueTimes() {
+  try { localStorage.setItem(MOSQUE_KEY, JSON.stringify(mosqueTimes)); } catch(e) {}
+}
+
+function parseMosqueHTML(html) {
+  // The API returns an HTML table; parse rows via DOMParser
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const rows = doc.querySelectorAll('table tr, .timetable-row, .prayer-row, tr');
+  const result = {};
+
+  // Fallback: try to extract from text using regex for date + 6 time pairs
+  const text = doc.body ? doc.body.innerText || doc.body.textContent : html;
+
+  // Try structured table first
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td, th');
+    if (cells.length < 10) return;
+    // Try to find a date cell
+    let dateStr = null;
+    for (let i = 0; i < 3; i++) {
+      const t = cells[i].textContent.trim();
+      // Match DD/MM/YYYY or YYYY-MM-DD or just day number
+      const m = t.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (m) { dateStr = t.slice(0,10); break; }
+    }
+    if (!dateStr) return;
+    const times = [];
+    for (let i = 0; i < cells.length; i++) {
+      const t = cells[i].textContent.trim();
+      if (/^\d{1,2}:\d{2}\s*(am|pm)/i.test(t)) times.push(t);
+    }
+    if (times.length >= 10) {
+      result[dateStr] = {
+        Fajr:    { start: times[0], jamaat: times[1] },
+        Dhuhr:   { start: times[3], jamaat: times[4] },
+        Asr:     { start: times[5], jamaat: times[6] },
+        Maghrib: { start: times[7], jamaat: times[8] },
+        Isha:    { start: times[9], jamaat: times[10] || times[9] },
+      };
+    }
+  });
+
+  return result;
+}
+
+async function fetchMosqueMonth(year, month) {
+  const key = `${year}-${String(month).padStart(2,'0')}`;
+  // Check if we already have this month cached
+  const cached = Object.keys(mosqueTimes).filter(d => d.startsWith(key));
+  if (cached.length > 20) return; // already have it
+
+  setBannerStatus('Fetching Deen Central times…');
+  try {
+    const url = MOSQUE_URL + month;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+
+    // Try JSON first
+    let parsed = {};
+    try {
+      const json = JSON.parse(text);
+      // Could be array of day objects
+      const days = json.timetable?.days || json.days || json.data || (Array.isArray(json) ? json : null);
+      if (days) {
+        days.forEach(day => {
+          const date = day.date || day.Date;
+          if (!date) return;
+          const iso = date.length === 10 ? date : null;
+          if (!iso) return;
+          parsed[iso] = {};
+          PRAYERS.forEach(p => {
+            const map = MOSQUE_MAP[p];
+            parsed[iso][p] = {
+              start:  day[map.start]  || day[map.start.replace('_','')] || '',
+              jamaat: day[map.jamaat] || day[map.jamaat.replace('_','')] || '',
+            };
+          });
+        });
+      }
+    } catch(e) {
+      // Not JSON — parse as HTML table
+      parsed = parseMosqueHTML(text);
+    }
+
+    if (Object.keys(parsed).length > 0) {
+      Object.assign(mosqueTimes, parsed);
+      saveMosqueTimes();
+      setBannerStatus('live');
+      renderDaily();
+    } else {
+      setBannerStatus('error');
+    }
+  } catch(e) {
+    console.warn('Deen Central fetch failed:', e);
+    setBannerStatus('error');
+  }
+}
+
+function getBannerEl() { return document.getElementById('mosque-banner'); }
+
+function setBannerStatus(status) {
+  const el = getBannerEl();
+  if (!el) return;
+  const dot = el.querySelector('.mosque-dot');
+  const txt = el.querySelector('.mosque-status');
+  if (status === 'live') {
+    dot.style.background = 'var(--green)';
+    txt.textContent = 'Deen Central times live';
+  } else if (status === 'error') {
+    dot.style.background = 'var(--red)';
+    txt.textContent = 'Could not fetch — using estimated times';
+  } else {
+    dot.style.background = 'var(--gold)';
+    txt.textContent = status;
+  }
+}
+
+function getTodayMosqueTimes(iso, prayer) {
+  return mosqueTimes[iso]?.[prayer] || null;
+}
+
+function refreshMosqueTimes() {
+  const today = new Date();
+  // Clear cache for this month and refetch
+  const key = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  Object.keys(mosqueTimes).filter(d => d.startsWith(key)).forEach(k => delete mosqueTimes[k]);
+  saveMosqueTimes();
+  fetchMosqueMonth(today.getFullYear(), today.getMonth()+1);
+}
+
+// Init mosque times on load
+loadMosqueTimes();
+(function() {
+  const today = new Date();
+  fetchMosqueMonth(today.getFullYear(), today.getMonth()+1);
+  // Also prefetch next month in the last week of the month
+  if (today.getDate() >= 24) {
+    const next = new Date(today.getFullYear(), today.getMonth()+1, 1);
+    fetchMosqueMonth(next.getFullYear(), next.getMonth()+1);
+  }
+})();
 
 let currentDateStr = todayStr();
 let data = JSON.parse(localStorage.getItem('salah_v2') || '{}');
