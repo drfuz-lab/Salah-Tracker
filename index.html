@@ -214,6 +214,11 @@
     border-color: rgba(224,92,92,0.2);
   }
 
+  .prayer-row.late {
+    background: rgba(201,120,40,0.1);
+    border-color: rgba(201,120,40,0.25);
+  }
+
   .prayer-dot {
     width: 10px;
     height: 10px;
@@ -340,6 +345,18 @@
     background: var(--red);
     color: #fff;
     border-color: var(--red);
+  }
+
+  .btn-late {
+    background: rgba(201,120,40,0.12);
+    border-color: rgba(201,120,40,0.4);
+    color: #c97828;
+  }
+
+  .btn-late.active, .btn-late:hover {
+    background: #c97828;
+    color: #fff;
+    border-color: #c97828;
   }
 
   /* Day summary */
@@ -656,6 +673,7 @@
   }
 
   .wd-dot.p { background: var(--green); }
+  .wd-dot.l { background: #c97828; opacity: 0.85; }
   .wd-dot.m { background: var(--red); opacity: 0.7; }
 
   /* Empty state */
@@ -825,8 +843,32 @@
     color: var(--gold);
     text-align: center;
     letter-spacing: 0.08em;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
+
+  /* Month-jump nav */
+  .yv-month-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 18px;
+    padding: 0 4px;
+  }
+  .yv-month-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .yv-month-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .yv-month-btn.active { background: var(--gold-soft); border-color: rgba(201,168,76,0.5); color: var(--gold); font-weight: 500; }
+
   .yv-legend {
     display: flex;
     gap: 14px;
@@ -944,6 +986,9 @@
   }
   .yv-pip.missed {
     background: rgba(224,92,92,0.45);
+  }
+  .yv-pip.late {
+    background: rgba(201,120,40,0.6);
   }
   .yv-pip.qadha-done {
     background: rgba(201,168,76,0.5);
@@ -2008,6 +2053,7 @@ function setPrayerStatus(dateStr, prayer, status) {
       // auto-add to qadha
       autoQadha(dateStr, prayer);
     }
+    // 'late' = prayed same day, no qadha needed
   }
   save();
   renderDaily();
@@ -2039,16 +2085,17 @@ function renderDaily() {
   const grid = document.getElementById('prayer-grid');
   grid.innerHTML = '';
 
-  let prayed = 0, missed = 0;
+  let prayed = 0, missed = 0, late = 0;
 
   PRAYERS.forEach(p => {
     const status = dayData[p] || 'none';
     if (status === 'prayed') prayed++;
+    if (status === 'late') { prayed++; late++; } // late counts as prayed for summary
     if (status === 'missed') missed++;
 
     const col = PRAYER_COLORS[p];
     const row = document.createElement('div');
-    row.className = 'prayer-row' + (status === 'prayed' ? ' prayed' : status === 'missed' ? ' missed' : '');
+    row.className = 'prayer-row' + (status === 'prayed' ? ' prayed' : status === 'missed' ? ' missed' : status === 'late' ? ' late' : '');
     const mt = getTodayMosqueTimes(currentDateStr, p);
     const timeHTML = mt
       ? `<span class="time-start">${mt.start}</span><span class="time-jamaat">${mt.jamaat}</span>`
@@ -2059,6 +2106,7 @@ function renderDaily() {
       <div class="prayer-time">${timeHTML}</div>
       <div class="prayer-actions">
         <button class="btn-prayer btn-prayed ${status==='prayed'?'active':''}" onclick="setPrayerStatus('${currentDateStr}','${p}','prayed')">✓ Prayed</button>
+        <button class="btn-prayer btn-late ${status==='late'?'active':''}" onclick="setPrayerStatus('${currentDateStr}','${p}','late')" title="Prayed same day but late">⏱ Late</button>
         <button class="btn-prayer btn-missed ${status==='missed'?'active':''}" onclick="setPrayerStatus('${currentDateStr}','${p}','missed')">✗ Missed</button>
       </div>`;
     grid.appendChild(row);
@@ -2212,7 +2260,7 @@ function renderStats() {
     let dots = '';
     PRAYERS.forEach(p => {
       const s = dayData[p];
-      dots += `<div class="wd-dot${s==='prayed'?' p':s==='missed'?' m':''}"></div>`;
+      dots += `<div class="wd-dot${s==='prayed'?' p':s==='late'?' l':s==='missed'?' m':''}"></div>`;
     });
     cell.innerHTML = `<div class="wd-label">${label}</div><div class="wd-dots">${dots}</div>`;
     weekGrid.appendChild(cell);
@@ -2238,7 +2286,8 @@ function renderStats() {
   const breakdown = document.getElementById('prayer-breakdown');
   breakdown.innerHTML = '';
   PRAYERS.forEach(p => {
-    const totalP = Object.values(data).reduce((s,d) => s + (d[p]==='prayed'?1:0), 0);
+    const totalP = Object.values(data).reduce((s,d) => s + ((d[p]==='prayed'||d[p]==='late')?1:0), 0);
+    const totalL = Object.values(data).reduce((s,d) => s + (d[p]==='late'?1:0), 0);
     const totalM = Object.values(data).reduce((s,d) => s + (d[p]==='missed'?1:0), 0);
     const totalDays = Object.keys(data).length || 1;
     const col = PRAYER_COLORS[p];
@@ -2247,7 +2296,8 @@ function renderStats() {
     el.innerHTML = `
       <div class="prayer-dot ${col}-dot" style="width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
       <div style="flex:1;font-size:14px">${p}</div>
-      <div style="font-size:12px;color:var(--green);margin-right:12px">✓ ${totalP}</div>
+      <div style="font-size:12px;color:var(--green);margin-right:8px">✓ ${totalP}</div>
+      ${totalL > 0 ? `<div style="font-size:12px;color:#c97828;margin-right:8px">⏱ ${totalL}</div>` : ''}
       <div style="font-size:12px;color:var(--red)">✗ ${totalM}</div>
     `;
     breakdown.appendChild(el);
@@ -2289,14 +2339,7 @@ function toggleWitr() {
 
 function initCalc() {
   // Set default dates
-  const toEl = document.getElementById('calc-to');
-  const fromEl = document.getElementById('calc-from');
-  if (!toEl.value) toEl.value = todayUK();
-  if (!fromEl.value) {
-    const d = new Date(todayStr() + 'T12:00:00');
-    d.setFullYear(d.getFullYear() - 1);
-    fromEl.value = isoToUK(d.toISOString().slice(0,10));
-  }
+  // Don't auto-fill dates — let user enter their own period
 
   // Build prayer chips
   const row = document.getElementById('prayer-checkboxes');
@@ -2651,11 +2694,22 @@ function renderYearView() {
     '#8b7fb8', // Witr
   ];
 
+  const todayMonth = new Date().getMonth();
   let html = `<div class="yv-year-label">${year}</div>`;
+
+  // Month-jump nav
+  const shortNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  html += `<div class="yv-month-nav" id="yv-month-nav">`;
+  for (let mi = 0; mi < 12; mi++) {
+    const isActive = mi === todayMonth;
+    html += `<button class="yv-month-btn${isActive?' active':''}" onclick="document.getElementById('yv-m-${mi}').scrollIntoView({behavior:'smooth',block:'start'})">${shortNames[mi]}</button>`;
+  }
+  html += `</div>`;
 
   // Legend
   html += `<div class="yv-legend">
     <div class="yv-legend-item"><div class="yv-legend-dot" style="background:rgba(76,175,125,0.75)"></div> Prayed</div>
+    <div class="yv-legend-item"><div class="yv-legend-dot" style="background:rgba(201,120,40,0.6)"></div> Late</div>
     <div class="yv-legend-item"><div class="yv-legend-dot" style="background:rgba(224,92,92,0.45)"></div> Missed</div>
     <div class="yv-legend-item"><div class="yv-legend-dot" style="background:rgba(201,168,76,0.5)"></div> Made up (Qadha)</div>
     <div class="yv-legend-item"><div class="yv-legend-dot" style="background:rgba(59,89,150,0.4)"></div> Jumu'ah Friday</div>
@@ -2679,7 +2733,7 @@ function renderYearView() {
     const pct = totalLogged > 0 ? Math.round(prayedTotal / totalLogged * 100) : null;
     const statsStr = pct !== null ? `${pct}% prayed` : '';
 
-    html += `<div class="yv-month">
+    html += `<div class="yv-month" id="yv-m-${m}">
       <div class="yv-month-header">
         <span>${MONTH_NAMES[m]}</span>
         <span class="yv-month-stats">${statsStr}</span>
@@ -2717,6 +2771,8 @@ function renderYearView() {
           cls += ' future';
         } else if (day[p] === 'prayed') {
           cls += ' prayed';
+        } else if (day[p] === 'late') {
+          cls += ' late';
         } else if (day[p] === 'missed') {
           cls += ' missed';
         } else if (day[p] === 'qadha') {
